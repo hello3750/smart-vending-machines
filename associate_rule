@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  6 03:56:20 2021
+
+@author: user
+"""
+
+import pandas as pd
+import numpy as np
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori
+from mlxtend.frequent_patterns import association_rules
+
+od = pd.read_csv('C:\\Users\\user\\Desktop\\Item2.csv', header = 0)
+
+def prodItemList(od):
+    uni_orderID = np.unique(od['orderID'])
+    prod_item_list = []
+    for i in range(0, len(uni_orderID)):
+        orderID_i = uni_orderID[i]
+        prod_item_i = list(set(od[od['orderID'] == orderID_i]['productName']))
+        prod_item_list.append(prod_item_i)
+    return uni_orderID, prod_item_list
+
+#uni_orderID, prod_item_list = prodItemList(od)
+
+
+def prodItemBool(uni_orderID, prod_item_list):
+    te = TransactionEncoder()
+    te_ary = te.fit_transform(prod_item_list).astype(int) #布林值
+    prod_item_bool = pd.DataFrame(te_ary, columns = te.columns_, index = uni_orderID)
+    prod_item_bool = prod_item_bool.reset_index().rename(columns = {'index': 'orderID'})
+    return prod_item_bool
+
+#prod_item_bool = prodItemBool(uni_orderID, prod_item_list)
+
+
+def assoRule(prod_item_bool):
+    supp_item = apriori(prod_item_bool.iloc[:,1:], min_support = 0.0015, use_colnames = True)
+    asso_rule = association_rules(supp_item, metric = 'lift', min_threshold = 1)
+    asso_rule = round(asso_rule, 4)
+    return asso_rule
+
+#asso_rule = assoRule(prod_item_bool)
+
+
+def main():
+    uni_orderID, prod_item_list = prodItemList(od)
+    prod_item_bool = prodItemBool(uni_orderID, prod_item_list)
+    asso_rule = assoRule(prod_item_bool)
+    return asso_rule
+
+
+if __name__ == '__main__':
+    asso_rule = main()
+
+
+asso_rule.to_csv('C:\\Users\\user\\Desktop\\asso_rule.csv', encoding = 'utf-8')
+
